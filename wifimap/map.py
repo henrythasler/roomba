@@ -12,14 +12,16 @@ from settings import settings
 
 import json
 
+import numpy as np
+
 # pip3 install matplotlib
 import matplotlib
-
 # Force matplotlib to not use any Xwindows backend.
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-import matplotlib.patheffects as path_effects
+
+from scipy.interpolate import griddata
 
 
 class WifiMap(object):
@@ -30,6 +32,12 @@ class WifiMap(object):
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
+
+        self.roomba_active = False
+        self.roomba_pos = None
+        self.roomba_signal = None
+        self.points = []
+        self.values = []
 
         self.client.connect(self.settings["broker"]["host"], port=self.settings["broker"]["port"])
 
@@ -59,9 +67,51 @@ class WifiMap(object):
     def on_message(self, client, userdata, msg):
         """The callback for when a PUBLISH message is received from the server."""
         if id(client) == id(self.client): 
-            if msg.topic.startswith(self.settings["topics"]["pos"]):
-                data = json.loads(msg.payload)
+            #print(self.roomba_active)
 
+            if msg.topic.startswith(self.settings["topics"]["pos"]) and self.roomba_active:
+                self.debug(str(msg.topic) + ': ' + str(msg.payload))
+                data = json.loads(msg.payload)
+                if "point" in data:
+                    self.roomba_pos = data["point"]
+
+            if msg.topic.startswith(self.settings["topics"]["signal"]) and self.roomba_active:
+                self.debug(str(msg.topic) + ': ' + str(msg.payload))
+                data = json.loads(msg.payload)
+                if "rssi" in data and self.roomba_pos:
+                    self.values.append(data["rssi"])
+                    self.points.append( [self.roomba_pos["x"], self.roomba_pos["y"]] )
+
+            if msg.topic.startswith(self.settings["topics"]["status"]):
+                self.debug(str(msg.topic) + ': ' + str(msg.payload))
+                data = json.loads(msg.payload)
+                if "phase" in data:
+                    if self.roomba_active and data["phase"] != "run":
+                        print("Captured values: ", len(self.points))
+                        if len(self.points) >= 4:
+                            
+                            self.points = np.array(self.points)
+                            minx=np.amin(self.points, axis=0)[0]
+                            maxx=np.amax(self.points, axis=0)[0]
+
+                            miny=np.amin(self.points, axis=0)[1]
+                            maxy=np.amax(self.points, axis=0)[1]
+
+                            grid_x, grid_y = np.mgrid[minx:maxx:100j, miny:maxy:100j]
+                            raw = griddata(self.points, self.values, (grid_x, grid_y), method='linear')
+
+                            #im = plt.imshow(raw, interpolation='lanczos', vmax=abs(raw).max(), vmin=-abs(raw).max())
+                            plt.imshow(raw.T, origin='lower', extent=(minx,maxx,miny,maxy))
+                            plt.plot(self.points[:,0], self.points[:,1], 'k.', ms=5)
+
+                            #plt.show()
+                            plt.savefig("wifimap.png", dpi=150)     # save as file (800x600)
+                            plt.close('all')     
+
+                            np.savez("wifimap.npz", points=self.points, values=self.values)
+
+
+                    self.roomba_active = data["phase"] == "run"
 
     def loop(self):
         """main loop"""
