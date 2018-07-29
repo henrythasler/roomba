@@ -8,13 +8,16 @@ import paho.mqtt.client as mqtt
 import ssl
 
 import json
-import pprint
-import csv
 
 from settings import settings
 
 
 class RoombaBridge(object):
+    """ Bridge topics from the roomba broker to any MQTT broker 
+    The roomba uses a certificate signed by some "ROOMBA CA". This root CA is not publicly available afaik.
+    To connect to the roomba broker via TLS w/o checking the certificate we MUST set
+        cert_reqs=ssl.CERT_NONE
+    """
     def __init__(self, settings):
         self.settings = settings
 
@@ -70,7 +73,14 @@ class RoombaBridge(object):
                 if "state" in data:
                     if "reported" in data["state"]:
                         for key, value in data["state"]["reported"].items():
-                            self.upstream.publish("home/roomba/"+str(key), json.dumps(value))
+                            retain = True
+
+                            # disable message retain for specific topics
+                            # FIXME: use a list to define all non-retain keys
+                            if key.startswith('pose'):
+                                retain = False
+
+                            self.upstream.publish("home/roomba/"+str(key), json.dumps(value), retain=retain)
                     else:
                         self.debug(str(msg.topic) + ': ' + str(msg.payload))
                 else:

@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 
@@ -59,9 +60,11 @@ raw = griddata(points, values, (grid_x, grid_y), method='linear')
 
 # plot a line, with 'linewidth' in (y-)data coordinates.       
 fig1, ax1 = plt.subplots()
+#ax1.set_title(u"Floor map", fontsize=20)
+
 ax1.set_aspect('equal')
 
-data_linewidth_plot(points[:,0], points[:,1], ax=ax1, linewidth=180, alpha=0.8)
+data_linewidth_plot(points[:,0], points[:,1], ax=ax1, linewidth=180, alpha=.75, color="steelblue")
 
 # plot path and position samples
 #plt.plot(points[:,0], points[:,1], 'ko-', markersize=2, linewidth=1.0, alpha=.5)
@@ -74,14 +77,15 @@ plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1],
 #plt.set_cmap("hsv")
 #plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], values, scale_units='xy', angles='xy', scale=1, zorder=99)
 
-start_pos = plt.Circle((points[0,0], points[0,1]), 350/4, color='grey', alpha=.75, zorder=100)
+start_pos = plt.Circle((points[0,0], points[0,1]), 50, color='red', alpha=.5, zorder=100)
 ax1.add_artist(start_pos)
 
-final_pos = plt.Circle((points[-1,0], points[-1,1]), 350/4, color='green', alpha=.75, zorder=101)
+final_pos = plt.Circle((points[-1,0], points[-1,1]), 50, color='magenta', alpha=.5, zorder=101)
 ax1.add_artist(final_pos)
 
 ax1.grid(which="both", zorder=5)
-#ax1.set_xticks(np.arange(-2000, 2001, 1000))
+ax1.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
+ax1.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
 
 plt.show()                        
 #plt.savefig("out.png", dpi=150)     # save as file (800x600)
