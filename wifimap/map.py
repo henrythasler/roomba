@@ -1,128 +1,87 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import time
-from datetime import datetime, timedelta
-
-# mqtt stuff
-import paho.mqtt.client as mqtt
-
-# global settings
-from settings import settings
-
-import json
-
 import numpy as np
-
-# pip3 install matplotlib
-import matplotlib
-# Force matplotlib to not use any Xwindows backend.
-matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
-
 from scipy.interpolate import griddata
 
+class data_linewidth_plot():
+    """ from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 """
+    def __init__(self, x, y, **kwargs):
+        self.ax = kwargs.pop("ax", plt.gca())
+        self.fig = self.ax.get_figure()
+        self.lw_data = kwargs.pop("linewidth", 1)
+        self.lw = 1
+        self.fig.canvas.draw()
+        self.timer = None
 
-class WifiMap(object):
-    def __init__(self, settings):
-        self.settings = settings
+        self.ppd = 72./self.fig.dpi
+        self.trans = self.ax.transData.transform
+        self.linehandle, = self.ax.plot([],[],**kwargs)
+        if "label" in kwargs: kwargs.pop("label")
+        self.line, = self.ax.plot(x, y, **kwargs)
+        self.line.set_color(self.linehandle.get_color())
+        self._resize()
+        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
 
-        # setup upstream mqtt stuff
-        self.client = mqtt.Client()
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
+    def _resize(self, event=None):
+        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
+        if lw != self.lw:
+            self.line.set_linewidth(lw)
+            self.lw = lw
+            self._redraw_later()
 
-        self.roomba_active = False
-        self.roomba_pos = None
-        self.roomba_signal = None
-        self.points = []
-        self.values = []
+    def _callback(self):
+        #print(self.lw)
+        self.fig.canvas.draw_idle()
 
-        self.client.connect(self.settings["broker"]["host"], port=self.settings["broker"]["port"])
+    def _redraw_later(self):
+        """ this is some strange workaround for updating the figure """
+        if not self.timer:
+            self.timer = self.fig.canvas.new_timer(interval=2000)
+            self.timer.single_shot = False
+            self.timer.add_callback(self._callback)
+            self.timer.start()
 
-        # use password authentication with broker
-        if "user" in self.settings["broker"] and "pass" in self.settings["broker"]:
-            self.client.username_pw_set(self.settings["broker"]["user"], self.settings["broker"]["pass"])    
+npzfile = np.load("path1.npz")
 
-        self.client.loop_start()
+points = npzfile["points"] * 11.8   # convert to mm
+values = npzfile["values"]
 
-    def debug(self, message):
-        if self.settings["debug"]:
-          try:
-            print(datetime.now().strftime("%H:%M:%S") + ' ' + str(message))
-          except:
-            pass
+minx=np.amin(points, axis=0)[0]
+maxx=np.amax(points, axis=0)[0]
 
-    def on_connect(self, client, userdata, flags, rc):
-        """The callback for when the client receives a CONNACK response from the server."""
-        if id(client) == id(self.client):
-            self.debug("Connected to mqtt broker with result code "+str(rc))
+miny=np.amin(points, axis=0)[1]
+maxy=np.amax(points, axis=0)[1]
 
-        # subscribe to relevant topics 
-        client.subscribe(self.settings["topics"]["pos"])    # position 
-        client.subscribe(self.settings["topics"]["signal"])  # wifi-signal
-        client.subscribe(self.settings["topics"]["status"])  # cleaning status
+grid_x, grid_y = np.mgrid[minx:maxx:100j, miny:maxy:100j]
+raw = griddata(points, values, (grid_x, grid_y), method='linear')
 
-    def on_message(self, client, userdata, msg):
-        """The callback for when a PUBLISH message is received from the server."""
-        if id(client) == id(self.client): 
-            #print(self.roomba_active)
-
-            if msg.topic.startswith(self.settings["topics"]["pos"]) and self.roomba_active:
-                self.debug(str(msg.topic) + ': ' + str(msg.payload))
-                data = json.loads(msg.payload)
-                if "point" in data:
-                    self.roomba_pos = data["point"]
-
-            if msg.topic.startswith(self.settings["topics"]["signal"]) and self.roomba_active:
-                self.debug(str(msg.topic) + ': ' + str(msg.payload))
-                data = json.loads(msg.payload)
-                if "rssi" in data and self.roomba_pos:
-                    self.values.append(data["rssi"])
-                    self.points.append( [self.roomba_pos["x"], self.roomba_pos["y"]] )
-
-            if msg.topic.startswith(self.settings["topics"]["status"]):
-                self.debug(str(msg.topic) + ': ' + str(msg.payload))
-                data = json.loads(msg.payload)
-                if "phase" in data:
-                    if self.roomba_active and data["phase"] != "run":
-                        print("Captured values: ", len(self.points))
-                        if len(self.points) >= 4:
-                            
-                            self.points = np.array(self.points)
-                            minx=np.amin(self.points, axis=0)[0]
-                            maxx=np.amax(self.points, axis=0)[0]
-
-                            miny=np.amin(self.points, axis=0)[1]
-                            maxy=np.amax(self.points, axis=0)[1]
-
-                            grid_x, grid_y = np.mgrid[minx:maxx:100j, miny:maxy:100j]
-                            raw = griddata(self.points, self.values, (grid_x, grid_y), method='linear')
-
-                            #im = plt.imshow(raw, interpolation='lanczos', vmax=abs(raw).max(), vmin=-abs(raw).max())
-                            plt.imshow(raw.T, origin='lower', extent=(minx,maxx,miny,maxy))
-                            plt.plot(self.points[:,0], self.points[:,1], 'k.', ms=5)
-
-                            #plt.show()
-                            plt.savefig("wifimap.png", dpi=150)     # save as file (800x600)
-                            plt.close('all')     
-
-                            np.savez("wifimap.npz", points=self.points, values=self.values)
+#plt.imshow(raw.T, origin='lower', extent=(minx,maxx,miny,maxy))
 
 
-                    self.roomba_active = data["phase"] == "run"
+# plot a line, with 'linewidth' in (y-)data coordinates.       
+fig1, ax1 = plt.subplots()
+ax1.set_aspect('equal')
 
-    def loop(self):
-        """main loop"""
-        while True:
-            time.sleep(1)
+data_linewidth_plot(points[:,0], points[:,1], ax=ax1, linewidth=180, alpha=0.8)
 
+# plot path and position samples
+#plt.plot(points[:,0], points[:,1], 'ko-', markersize=2, linewidth=1.0, alpha=.5)
 
-if __name__ == '__main__':
-    
-    bridge = WifiMap(settings)
-    try:
-        bridge.loop()
-    except (KeyboardInterrupt, SystemExit):
-        pass
+""" plot arrows colored by time """
+plt.set_cmap("gist_rainbow")
+plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], range(len(points)), scale_units='xy', angles='xy', scale=1, zorder=99)
+
+""" plot arrows colored by heading """
+#plt.set_cmap("hsv")
+#plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], values, scale_units='xy', angles='xy', scale=1, zorder=99)
+
+start_pos = plt.Circle((points[0,0], points[0,1]), 350/4, color='grey', alpha=.75, zorder=100)
+ax1.add_artist(start_pos)
+
+final_pos = plt.Circle((points[-1,0], points[-1,1]), 350/4, color='green', alpha=.75, zorder=101)
+ax1.add_artist(final_pos)
+
+ax1.grid(which="both", zorder=5)
+#ax1.set_xticks(np.arange(-2000, 2001, 1000))
+
+plt.show()                        
+#plt.savefig("out.png", dpi=150)     # save as file (800x600)
