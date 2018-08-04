@@ -71,7 +71,7 @@ class RoombaBridge(object):
         if id(client) == id(self.roomba): 
             # forward message from roomba to upstream broker
             self.debug("msg from roomba - " + str(msg.topic) + ': ' + str(msg.payload), 3)
-            data = json.loads(msg.payload)
+            data = json.loads(msg.payload.decode("utf-8"))
             if msg.topic.startswith('wifistat') or msg.topic.startswith('$aws/things'):
                 if "state" in data:
                     if "reported" in data["state"]:

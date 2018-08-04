@@ -1,0 +1,15 @@
+# copy this file to /etc/systemd/system/
+# enable with: sudo systemctl start bridge
+
+[Unit]
+Description=roombaBridge
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/henry/roomba/bridge/bridge.py
+RestartSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

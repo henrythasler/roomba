@@ -11,7 +11,19 @@ pip3 install paho-mqtt matplotpy scipy
 
 ## modules
 
-* `bridge` - provides a convenient way of 2-way mirroring the mqtt states and commands from the robot unit to your local mqtt broker.
+### bridge
+
+Provides a convenient way of 2-way mirroring the mqtt states and commands from the robot unit to your local mqtt broker.
+
+#### Setup
+
+1. Install the mqtt module for root: `sudo pip3 install paho-mqtt`
+2. modify bridge/settings.py according to your needs. Especially the `host`, `user` and `pass` settings.
+3. modify `bridge/bridge.service` according to your needs.
+4. copy service file to sysdemd-folder: `sudo cp bridge.service /etc/systemd/system/`
+5. start service `sudo systemctl start bridge`
+
+If encountering errors during startup, check logs with `sudo journalctl -u bridge`
 
 ## Unit measurements
 
@@ -49,5 +61,6 @@ There are some other commands available (see https://github.com/koalazak/dorita9
 * https://github.com/koalazak/dorita980
 * https://github.com/NickWaterton/Roomba980-Python
 * https://www.hivemq.com/blog/seven-best-mqtt-client-tools
+* https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
 
 
