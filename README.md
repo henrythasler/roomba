@@ -9,7 +9,7 @@ sudo apt install python3-pip python3-setuptools
 pip3 install paho-mqtt matplotpy scipy
 ```
 
-## modules
+## python3 modules
 
 ### bridge
 

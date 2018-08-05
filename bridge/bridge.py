@@ -38,6 +38,7 @@ class RoombaBridge(object):
         self.roomba.tls_insecure_set(True)
         self.roomba.username_pw_set(self.settings["roomba"]["user"], self.settings["roomba"]["pass"])    
 
+        # FIXME: move to loop() to handle temporary unavailability of the roomba broker
         self.roomba.connect(self.settings["roomba"]["host"], port=self.settings["roomba"]["port"])
         self.roomba.loop_start()
 
