@@ -48,18 +48,6 @@ npzfile = np.load("2018-08-05_191829_path.npz")
 points = npzfile["points"] * 11.8  # convert to mm
 values = npzfile["values"]
 
-minx=np.amin(points, axis=0)[0]
-maxx=np.amax(points, axis=0)[0]
-
-miny=np.amin(points, axis=0)[1]
-maxy=np.amax(points, axis=0)[1]
-
-grid_x, grid_y = np.mgrid[minx:maxx:100j, miny:maxy:100j]
-raw = griddata(points, values, (grid_x, grid_y), method='linear')
-
-#plt.imshow(raw.T, origin='lower', extent=(minx,maxx,miny,maxy))
-
-
 # plot a line, with 'linewidth' in (y-)data coordinates.       
 fig, ax = plt.subplots()
 #ax.set_title(u"Floor map", fontsize=20)
