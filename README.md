@@ -6,7 +6,7 @@ This is about using the iRobot roomba 960 vacuum cleaner unit in your own MQTT-b
 
 ```
 sudo apt install python3-pip python3-setuptools
-pip3 install paho-mqtt matplotpy scipy
+pip3 install paho-mqtt matplotlib scipy
 ```
 
 ## python3 modules
