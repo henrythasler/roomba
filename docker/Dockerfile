@@ -1,25 +1,36 @@
-from python:3.7.0-alpine3.8
+#from python:3.6.6-alpine3.8
+FROM alpine:3.8
 
-RUN set -ex \
-    && apk add --no-cache --virtual .build-deps  \
-		build-base
+# make sure we use the latest versions
+RUN apk --update upgrade
 
-RUN set -ex \
-    && apk add --no-cache --virtual .build-deps \
+# helper packages (you never know)
+RUN apk add --no-cache --virtual .helper \
+        bash \
+        wget \
+        curl \
+        tar \
+        nano
+
+# build dependencies
+RUN apk add --no-cache --virtual .build-deps \
         libpng-dev \
         freetype-dev \
-        lapack-dev
+        py-numpy-dev \
+        build-base
 
-RUN set -ex \
-    && pip3 install \
-        numpy \
-        paho-mqtt \
-        matplotlib
+# actual packages we require for the visuals
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
+        py3-paho-mqtt \
+        py3-numpy \
+        py3-scipy
 
-RUN set -ex \
-    && apk add --no-cache --virtual .build-deps  \
-		gfortran
+# another package that is required for the visuals
+RUN python3 -mpip install -U matplotlib
 
-RUN set -ex \
-    && pip3 install \
-        scipy
+# remove clutter
+RUN apk del .build-deps
+
+# runtime-dependency
+RUN apk add --no-cache --virtual \
+        freetype

@@ -25,6 +25,17 @@ Provides a convenient way of 2-way mirroring the mqtt states and commands from t
 
 If encountering errors during startup, check logs with `sudo journalctl -u bridge`
 
+### visuals/livepath
+
+Read mission data from your local MQTT broker and return a livemap that updates every few seconds. You need to set-up the bridge component first.
+
+### dockerfile
+
+Make sure you specify your local dns-resolver/wifi-router if you refer to domain names in your home network:
+```
+docker run --rm -ti --dns 192.168.1.1 -v /home/henry/dev/roomba:/roomba img-roomba:0.3 bash
+```
+
 ## Unit measurements
 
 \# | robot-units (x) | distance [mm] | factor
