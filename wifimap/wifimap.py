@@ -91,7 +91,7 @@ class WifiMap(object):
                 self.debug(str(msg.topic) + ': ' + str(msg.payload))
                 data = json.loads(msg.payload)
                 if "phase" in data:
-                    if self.roomba_active and data["phase"] == "stop":
+                    if self.roomba_active and (data["phase"] == "stop" or data["phase"] == "charge"):
                         print("Captured values: ", len(self.points))
                         if len(self.points) >= 4:
                             
@@ -113,8 +113,9 @@ class WifiMap(object):
                             plt.savefig("wifimap.png", dpi=150)     # save as file (800x600)
                             plt.close('all')     
 
-                            np.savez("wifimap.npz", points=self.points, values=self.values)
-                            np.savez("path.npz", points=self.path, values=self.heading)
+                            temp_name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+                            np.savez(temp_name+"_wifi.npz", points=self.points, values=self.values)
+                            np.savez(temp_name+"_path.npz", points=self.path, values=self.heading)
 
                     self.roomba_active = (data["phase"] == "run") or (data["phase"] == "hmPostMsn")
 

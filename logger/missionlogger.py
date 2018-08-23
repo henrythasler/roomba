@@ -3,6 +3,7 @@
 
 # basic packages
 import time
+import os
 from datetime import datetime
 
 # mqtt stuff
@@ -85,8 +86,8 @@ class MissionLogger(object):
                     if self.roomba_active and (data["phase"] not in ["run", "hmPostMsn"]):
                         self.debug("Captured path with {} positions.".format(len(self.path)), 2)
                         temp_name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-                        np.savez(temp_name+"_wifi.npz", points=self.points, values=self.values)
-                        np.savez(temp_name+"_path.npz", points=self.path, values=self.heading)
+                        np.savez(os.path.dirname(os.path.abspath(__file__))+"/"+temp_name+"_wifi.npz", points=self.points, values=self.values)
+                        np.savez(os.path.dirname(os.path.abspath(__file__))+"/"+temp_name+"_path.npz", points=self.path, values=self.heading)
 
                         # delete captured data
                         del self.points[:]

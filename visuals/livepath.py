@@ -123,9 +123,6 @@ class MissionLogger(object):
                     if self.roomba_active and (data["phase"] not in ["run", "hmPostMsn"]):
                         self.debug("Captured path with {} positions.".format(len(self.path)), 2)
 
-                        temp_name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-                        np.savez(temp_name+"_path.npz", points=self.path, values=self.heading)
-
                         # delete captured data
                         del self.path[:]
                         del self.heading[:]
@@ -175,6 +172,7 @@ class MissionLogger(object):
 
         fig.tight_layout()
 
+        # use in-memory file to save plot
         buffer = io.BytesIO()
         plt.savefig(buffer, format="png", dpi=100, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)
         self.client.publish(self.settings["topics"]["livepath"], bytearray(buffer.getbuffer()), retain=True)
@@ -186,6 +184,7 @@ class MissionLogger(object):
         while True:
             time.sleep(5)
 
+            # update livepath
             if self.roomba_active and len(self.path)>2:
                 self.drawPath()
 

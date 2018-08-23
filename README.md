@@ -33,7 +33,14 @@ Read mission data from your local MQTT broker and return a livemap that updates 
 
 Make sure you specify your local dns-resolver/wifi-router if you refer to domain names in your home network:
 ```
-docker run --rm -ti --dns 192.168.1.1 -v /home/henry/dev/roomba:/roomba img-roomba:0.3 bash
+docker run --rm -ti --dns 192.168.1.1 -v /home/henry/dev/roomba:/roomba img-roomba:0.3 python3 /roomba/visuals/livepath.py
+sudo docker run -d --restart=always --name livepath -v /home/henry/dev:/home/henry/dev --dns 192.168.178.1 192.168.178.27:5000/roomba-python python3 /home/henry/dev/roomba/visuals/livepath.py
+```
+
+push to local registry
+```
+docker tag img-roomba:0.3 localhost:5000/img-roomba:0.3
+docker push localhost:5000/img-roomba:0.3
 ```
 
 ## Unit measurements
@@ -52,11 +59,12 @@ docker run --rm -ti --dns 192.168.1.1 -v /home/henry/dev/roomba:/roomba img-room
 
 Command | Description
 ---|---
-`start` | starts cleaning (see also `start`)
-`clean` | start cleaning cycle (difference to `start` is yet unknown)
-`stop` | stop cleaning
-`pause` | pause mission
-`resume` | resume mission
+`start` | starts 2-pass cleaning mission (see also `clean`)
+`clean` | start 2-pass cleaning mission (difference to `start` is yet unknown)
+`quick` | start qick (1-pass) cleaning mission
+`stop` | stop (abort) current mission
+`pause` | pause current mission. Send `stop` to cancel the mission, before initiating another mission.
+`resume` | resume current mission
 `dock` | Initiates the docking sequence. Same as pressing the `home` button.
 `fbeep` * | emit a single beep
 `find` * | Continuous emission of beeping sounds (to locate robot unit). Send `find` command again or press the `clean` button to turn off.
@@ -73,5 +81,9 @@ There are some other commands available (see https://github.com/koalazak/dorita9
 * https://github.com/NickWaterton/Roomba980-Python
 * https://www.hivemq.com/blog/seven-best-mqtt-client-tools
 * https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
+* http://www.scipy-lectures.org/packages/scikit-image/index.html
+* https://icaci.org/files/documents/ICC_proceedings/ICC2009/html/refer/19_2.pdf
+* https://www.researchgate.net/publication/228846264_Field_deformation_in_an_agent-based_generalisation_model_The_GAEL_model
+
 
 
