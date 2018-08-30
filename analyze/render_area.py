@@ -12,6 +12,7 @@ class data_linewidth_plot():
         self.lw = 1
         self.fig.canvas.draw()
         self.timer = None
+        self.saved = False
 
         self.ppd = 72./self.fig.dpi
         self.trans = self.ax.transData.transform
@@ -32,6 +33,9 @@ class data_linewidth_plot():
     def _callback(self):
         #print(self.lw)
         self.fig.canvas.draw_idle()
+        if not self.saved:
+            plt.savefig(sys.argv[1]+".png", format="png", dpi=1000, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)
+            self.saved = True
 
     def _redraw_later(self):
         """ this is some strange workaround for updating the figure """
@@ -44,14 +48,17 @@ class data_linewidth_plot():
 if len(sys.argv) > 1:
     npzfile = np.load(sys.argv[1])
 
-    points = npzfile["points"] * 11.8  # convert to mm
-    values = npzfile["values"]
+    points = npzfile["points"][:] * 11.8  # convert to mm
+    values = npzfile["values"][:]
 
     minx=np.amin(points, axis=0)[0]
     maxx=np.amax(points, axis=0)[0]
 
     miny=np.amin(points, axis=0)[1]
     maxy=np.amax(points, axis=0)[1]
+
+#    ax.set_ylim(ax.get_ylim()[0]-150, ax.get_ylim()[1]+150)
+#    ax.set_xlim(ax.get_xlim()[0]-150, ax.get_xlim()[1]+150)
 
     #plt.imshow(raw.T, origin='lower', extent=(minx,maxx,miny,maxy))
 
@@ -64,7 +71,11 @@ if len(sys.argv) > 1:
 
     # fixed aspect ratio
     ax.set_aspect('equal')
-    fig.set_size_inches(8, 6)
+    fig.set_size_inches((maxx-minx)/1000, (maxy-miny)/1000)
+    
+
+    ax.set_xlim(minx-150, maxx+150)
+    ax.set_ylim(miny-150, maxy+150)
 
     # set background colors
     fig.patch.set_facecolor('black')
@@ -96,7 +107,6 @@ if len(sys.argv) > 1:
 
     # plot robot path with respect to width of vacuum unit (180mm)
     data_linewidth_plot(points[:,0], points[:,1], ax=ax, linewidth=200, alpha=1, color="white", solid_capstyle="round")
-
+    
     fig.tight_layout()
-    plt.savefig(sys.argv[1]+".png", format="png", dpi=100, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)
     plt.show()                        

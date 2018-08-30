@@ -172,6 +172,9 @@ class MissionLogger(object):
 
         fig.tight_layout()
 
+        ax.set_ylim(ax.get_ylim()[0]-150, ax.get_ylim()[1]+150)
+        ax.set_xlim(ax.get_xlim()[0]-150, ax.get_xlim()[1]+150)
+
         # use in-memory file to save plot
         buffer = io.BytesIO()
         plt.savefig(buffer, format="png", dpi=100, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)

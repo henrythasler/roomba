@@ -1,17 +1,20 @@
 import sys
 
-import matplotlib.patches as patches
-import matplotlib.collections as collections
-import matplotlib.pyplot as plt
 import numpy as np
-
+from matplotlib import patches, collections, ticker, pyplot as plt
 from skimage import io, morphology, measure
 
+# width of vacuum opening
+ROOMBA_WIDTH = 180
+SCALING_FACTOR = 10 # mm/pixel
+
+
 class Polygon():
-    def __init__(self, points, center=[0, 0], snap=90):
+    def __init__(self, points, center=[0, 0], snap=90, scaling=1):
         self.snap_angle = snap
         self.center = center
         self.points = points
+        self.scaling = scaling
         self.segment_vectors = None
         self.segment_lengths = None
         self.segment_unit_vectors = None
@@ -100,6 +103,15 @@ class Polygon():
             self.points[0] = self.points[-1] = intersect
         return self
 
+    def get_area(self):
+        """ return polygon area in squarepixels """
+        """ soruce: https://stackoverflow.com/questions/22678990/how-can-i-calculate-the-area-within-a-contour-in-python-using-the-matplotlib"""
+        x=self.points[:,0]
+        y=self.points[:,1]
+        area=0.5*np.sum(y[:-1]*np.diff(x) - x[:-1]*np.diff(y))
+        area=np.abs(area)*self.scaling**2
+        return(area)
+
     def simplify(self):
         """ will remove unnecessary points on segments """
         # same orientation in consecutive segments means unnecessary points
@@ -134,20 +146,73 @@ class Polygon():
 def Rotate2D(points, center, angle=np.pi/4):
     return np.dot(points - center, np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]]))+center
 
-fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(9.3, 6), sharex=True, sharey=True)
-fig.subplots_adjust(left=0.03, right=0.97, hspace=0.3, wspace=0.05)
-ax = axes.ravel()    
-for a in ax.ravel():
-    a.axis('off')
-    a.set_aspect('equal')
+def renderArea(filename):
+    npzfile = np.load(filename)
+
+    points = npzfile["points"][:] * 11.8  # convert to mm
+    values = npzfile["values"][:]
+
+    minx=np.amin(points, axis=0)[0]
+    maxx=np.amax(points, axis=0)[0]
+
+    miny=np.amin(points, axis=0)[1]
+    maxy=np.amax(points, axis=0)[1]
+
+    print(minx, maxx, miny, maxy)
+
+    #fig, ax = plt.subplots()
+    fig = plt.figure(figsize=((maxx-minx+300)/100/SCALING_FACTOR,(maxy-miny+300)/100/SCALING_FACTOR), dpi=100)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)    
+
+    # size and fixed aspect ratio
+    #fig.set_size_inches(10, 8)
+    ax.set_aspect('equal')
+
+    ax.set_xlim(minx-150, maxx+150)
+    ax.set_ylim(miny-150, maxy+150)
+
+    # set background colors
+    fig.patch.set_facecolor('black')
+    #ax.set_facecolor('black')
+
+    # all off
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
+
+    #fig.tight_layout()
+
+    # plot robot path with respect to width of vacuum unit (e.g. 180mm)
+    # from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 
+    # if you want to updated lines (e.g. resize plot) take the full code from that answer
+    lw = ((ax.transData.transform((1, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
+    plt.plot(points[:,0], points[:,1], '-', color="white", linewidth=lw, alpha=1.)
+
+    #buffer = io.BytesIO()
+    plt.savefig(sys.argv[1]+".png", format="png", dpi=100, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)
+    plt.close('all')  
+    #return buffer   
+
 
 # load test data
 if len(sys.argv) > 1:
-    source = io.imread(sys.argv[1], as_gray=True)
+    renderArea(sys.argv[1])
+    source = io.imread(sys.argv[1]+".png", as_gray=True)
     #source = morphology.convex_hull_image(source)
 
-    label_img = measure.label(source)
+    fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(9.3, 6), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.03, right=0.97, hspace=0.3, wspace=0.05)
+    ax = axes.ravel()    
+    for a in ax.ravel():
+        a.axis('off')
+        a.set_aspect('equal')
 
+    label_img = measure.label(source)
 
     # skimage uses row, column coordinate system where top-left = origin
     # matplotlib uses x,y coordinate system where top-left = origin
@@ -180,7 +245,7 @@ if len(sys.argv) > 1:
 
     #polygon = Rotate2D(polygon, region.centroid, -region.orientation)
     # decomposition into segments (edges)
-    polygon = Polygon(shape, region.centroid, snap=45)
+    polygon = Polygon(shape, region.centroid, snap=45, scaling=SCALING_FACTOR)
 
     points = polygon.get_points()
     ax[2].plot(points[:, 1], points[:, 0], linewidth=2.5)
@@ -250,24 +315,16 @@ if len(sys.argv) > 1:
     points = polygon.get_points()
     #fig.patch.set_facecolor('#065da2')
     p = collections.PatchCollection([patches.Polygon(  np.roll(points, 1, axis=1), True)], edgecolor="cyan", linewidth=3)
+    ax[11].set_facecolor('#065da2')
     ax[11].add_collection(p)
     ax[11].set_title("final ({:.2f}°)".format(polygon.get_avg_deviation()), fontdict={'fontsize': 11})
-    ax[11].set_facecolor('#065da2')
+    print("Polygon Area={:.2f}m²".format(polygon.get_area()/1e6))
+    M = measure.moments(source)
+    print("Original Shape Area={:.2f}m²".format(M[0,0]*(SCALING_FACTOR**2)/1e6))
 
     #print(polygon)
     #current_shape = shape.get_shape()
     #ax[2].plot(current_shape[:, 1], current_shape[:, 0], linewidth=4)
 
-
-# define objectives, constrains
-
-# compute objective violations 
-
-# initialize queue
-
-# step-by-step transformation and queueing
-
-# rotate to fit landscape orientation
-
-plt.tight_layout()
-plt.show()
+    #plt.tight_layout()
+    plt.show()
