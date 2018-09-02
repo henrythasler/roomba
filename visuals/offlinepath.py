@@ -17,15 +17,19 @@ if len(sys.argv) > 1:
     miny=np.amin(points, axis=0)[1]
     maxy=np.amax(points, axis=0)[1]
 
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots()
+    #fig.set_size_inches(10, 8)
+    fig = plt.figure(figsize=(10,8), dpi=100)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    fig.add_axes(ax)    
+
     #ax.set_title(u"Floor map", fontsize=20)
 
     # size and fixed aspect ratio
-    fig.set_size_inches(10, 8)
     ax.set_aspect('equal')
 
-    ax.set_xlim(minx-150, maxx+150)
-    ax.set_ylim(miny-150, maxy+150)
+    ax.set_xlim(minx-ROOMBA_WIDTH, maxx+ROOMBA_WIDTH)
+    ax.set_ylim(miny-ROOMBA_WIDTH, maxy+ROOMBA_WIDTH)
 
     # set background colors
     fig.patch.set_facecolor('#065da2')
@@ -46,7 +50,7 @@ if len(sys.argv) > 1:
 
     plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
 
-    fig.tight_layout()
+    #fig.tight_layout()
 
     # plot robot path with respect to width of vacuum unit (e.g. 180mm)
     # from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 
@@ -58,10 +62,10 @@ if len(sys.argv) > 1:
     plt.plot(points[:,0], points[:,1], '-', color="white", markersize=2, linewidth=.75, alpha=.5)
 
     # plot start and end position 
-    start_pos = plt.Circle((points[0,0], points[0,1]), 50, color='white', linewidth=2, alpha=.5, zorder=100)
+    start_pos = plt.Circle((points[0,0], points[0,1]), 100, color='white', linewidth=2, alpha=.5, zorder=100)
     ax.add_artist(start_pos)
 
-    final_pos = plt.Circle((points[-1,0], points[-1,1]), 50, color='lime', linewidth=2, alpha=.5, zorder=101)
+    final_pos = plt.Circle((points[-1,0], points[-1,1]), 100, color='lime', linewidth=2, alpha=.5, zorder=101)
     ax.add_artist(final_pos)
 
     plt.savefig(sys.argv[1]+".png", format="png", dpi=100, facecolor=fig.get_facecolor(), edgecolor='none')     # save as file (800x600)
