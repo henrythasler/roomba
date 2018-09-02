@@ -131,8 +131,11 @@ class MissionLogger(object):
 
         plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
 
+        # call this before any transformations. reason is unknown
+        fig.canvas.draw()   
+
         lw = ((ax.transData.transform((1, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
-        plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9)
+        plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9, solid_capstyle="butt")
 
         # plot path (and position samples)
         plt.plot(points[:,0], points[:,1], '-', color="white", markersize=2, linewidth=.75, alpha=.5)

@@ -4,6 +4,7 @@ from matplotlib import ticker, pyplot as plt
 
 # width of vacuum opening
 ROOMBA_WIDTH = 180
+SCALING_FACTOR = 10
 
 if len(sys.argv) > 1:
     npzfile = np.load(sys.argv[1])
@@ -17,8 +18,6 @@ if len(sys.argv) > 1:
     miny=np.amin(points, axis=0)[1]
     maxy=np.amax(points, axis=0)[1]
 
-    #fig, ax = plt.subplots()
-    #fig.set_size_inches(10, 8)
     fig = plt.figure(figsize=(10,8), dpi=100)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     fig.add_axes(ax)    
@@ -50,13 +49,14 @@ if len(sys.argv) > 1:
 
     plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
 
-    #fig.tight_layout()
+    # call this before any transformations. reason is unknown
+    fig.canvas.draw()   
 
     # plot robot path with respect to width of vacuum unit (e.g. 180mm)
     # from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 
-    # if you want to updated lines (e.g. resize plot) take the full code from that answer
-    lw = ((ax.transData.transform((1, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
-    plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9)
+    # if you want to updated lines (e.g. resize plot) take the full code from that answer 
+    lw = ((ax.transData.transform((0, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
+    plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9, solid_capstyle="butt")
 
     # plot path (and position samples)
     plt.plot(points[:,0], points[:,1], '-', color="white", markersize=2, linewidth=.75, alpha=.5)
