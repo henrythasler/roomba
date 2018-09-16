@@ -91,11 +91,15 @@ class Polygon():
 
     def close_poly(self):
         # parallel lines, same orientation
+        # FIXME Find solution for this case
         if np.abs(self.segment_orientation[0] - self.segment_orientation[-1]) < 1e-6:
             print("parallel lines, same orientation")
+
         # parallel lines, opposite orientation
+        # FIXME Find solution for this case
         elif np.abs(self.segment_orientation[0] + self.segment_orientation[-1] - 360) < 1e-6:
             print("parallel lines, opposite orientation")
+        
         else:
             intersect = self.get_intersect(self.points[0], self.points[1], self.points[-2], self.points[-1])
 #            print(intersect)
@@ -185,7 +189,8 @@ def renderArea(filename):
 
     plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
 
-    #fig.tight_layout()
+    # call this before any transformations. reason is unknown
+    fig.canvas.draw()   
 
     # plot robot path with respect to width of vacuum unit (e.g. 180mm)
     # from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 
@@ -220,7 +225,7 @@ if len(sys.argv) > 1:
     ax[0].set_title("original shape and orientation", fontdict={'fontsize': 11})
 
     # extract polygon from shape
-    shape = measure.approximate_polygon(measure.find_contours(source, 0.5)[0], tolerance=10)
+    shape = measure.approximate_polygon(measure.find_contours(source, 0.5)[0], tolerance=15)
     ax[1].imshow(source*0.4, cmap=plt.cm.get_cmap(name="cividis"), vmax=1)
     ax[1].quiver(shape[:,1][:-1], shape[:,0][:-1], shape[:,1][1:]-shape[:,1][:-1], shape[:,0][1:]-shape[:,0][:-1], 
         range(len(shape)), scale_units='xy', angles='xy', width=.01, scale=1, zorder=99,

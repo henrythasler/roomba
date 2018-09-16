@@ -83,7 +83,7 @@ class MissionLogger(object):
                 self.debug(str(msg.topic) + ': ' + str(msg.payload), 3)
                 data = json.loads(msg.payload)
                 if "phase" in data:
-                    if self.roomba_active and (data["phase"] not in ["run", "hmPostMsn"]):
+                    if self.roomba_active and (data["phase"] not in ["run", "hmPostMsn", "pause"]):
                         self.debug("Captured path with {} positions.".format(len(self.path)), 2)
                         temp_name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
                         np.savez(os.path.dirname(os.path.abspath(__file__))+"/"+temp_name+"_wifi.npz", points=self.points, values=self.values)
@@ -95,7 +95,7 @@ class MissionLogger(object):
                         del self.path[:]
                         del self.heading[:]
 
-                    self.roomba_active = (data["phase"] in ["run", "hmPostMsn"])
+                    self.roomba_active = (data["phase"] in ["run", "hmPostMsn", "pause"])
 
     def loop(self):
         """main loop"""

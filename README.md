@@ -28,6 +28,7 @@ If encountering errors during startup, check logs with `sudo journalctl -u bridg
 ### visuals/livepath
 
 Read mission data from your local MQTT broker and return a livemap that updates every few seconds. You need to set-up the bridge component first.
+![Live Map](docs/livemap1.png)
 
 ### dockerfile
 

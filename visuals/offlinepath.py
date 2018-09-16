@@ -6,6 +6,45 @@ from matplotlib import ticker, pyplot as plt
 ROOMBA_WIDTH = 180
 SCALING_FACTOR = 10
 
+class data_linewidth_plot():
+    """ from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 """
+    def __init__(self, x, y, **kwargs):
+        self.ax = kwargs.pop("ax", plt.gca())
+        self.fig = self.ax.get_figure()
+        self.lw_data = kwargs.pop("linewidth", 1)
+        self.lw = 1
+        self.fig.canvas.draw()
+        self.timer = None
+
+        self.ppd = 72./self.fig.dpi
+        self.trans = self.ax.transData.transform
+        self.linehandle, = self.ax.plot([],[],**kwargs)
+        if "label" in kwargs: kwargs.pop("label")
+        self.line, = self.ax.plot(x, y, **kwargs)
+        self.line.set_color(self.linehandle.get_color())
+        self._resize()
+        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
+
+    def _resize(self, event=None):
+        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
+        if lw != self.lw:
+            self.line.set_linewidth(lw)
+            self.lw = lw
+            self._redraw_later()
+
+    def _callback(self):
+        #print(self.lw)
+        self.fig.canvas.draw_idle()
+
+    def _redraw_later(self):
+        """ this is some strange workaround for updating the figure """
+        if not self.timer:
+            self.timer = self.fig.canvas.new_timer(interval=2000)
+            self.timer.single_shot = False
+            self.timer.add_callback(self._callback)
+            self.timer.start()
+
+
 if len(sys.argv) > 1:
     npzfile = np.load(sys.argv[1])
 
@@ -52,11 +91,18 @@ if len(sys.argv) > 1:
     # call this before any transformations. reason is unknown
     fig.canvas.draw()   
 
+
     # plot robot path with respect to width of vacuum unit (e.g. 180mm)
     # from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit#42972469 
     # if you want to updated lines (e.g. resize plot) take the full code from that answer 
-    lw = ((ax.transData.transform((0, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
-    plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9, solid_capstyle="butt")
+
+    # simple
+    #lw = ((ax.transData.transform((0, ROOMBA_WIDTH))-ax.transData.transform((0, 0)))*(72./fig.dpi))[1]
+    #plt.plot(points[:,0], points[:,1], '-', color="steelblue", linewidth=lw, alpha=.9, solid_capstyle="butt")
+
+    # full
+    data_linewidth_plot(points[:,0], points[:,1], ax=ax, color="steelblue", linewidth=ROOMBA_WIDTH, alpha=.9, solid_capstyle="butt")
+
 
     # plot path (and position samples)
     plt.plot(points[:,0], points[:,1], '-', color="white", markersize=2, linewidth=.75, alpha=.5)
