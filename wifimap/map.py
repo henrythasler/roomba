@@ -41,7 +41,9 @@ class data_linewidth_plot():
             self.timer.add_callback(self._callback)
             self.timer.start()
 
-npzfile = np.load("path1.npz")
+
+
+npzfile = np.load("/home/henry/dev/roomba/logger/2018-08-05_123107_path.npz")
 
 points = npzfile["points"] * 11.8   # convert to mm
 values = npzfile["values"]
@@ -59,33 +61,43 @@ raw = griddata(points, values, (grid_x, grid_y), method='linear')
 
 
 # plot a line, with 'linewidth' in (y-)data coordinates.       
-fig1, ax1 = plt.subplots()
-#ax1.set_title(u"Floor map", fontsize=20)
+fig, ax = plt.subplots()
+#ax.set_title(u"Floor map", fontsize=20)
 
-ax1.set_aspect('equal')
+# fixed aspect ratio
+ax.set_aspect('equal')
 
-data_linewidth_plot(points[:,0], points[:,1], ax=ax1, linewidth=180, alpha=.75, color="steelblue")
+# set background colors
+fig.patch.set_facecolor('#065da2')
+ax.set_facecolor('#065da2')
+
+#ax.xaxis.set_ticklabels([])
+#ax.yaxis.set_ticklabels([])
+#ax.axis('off')
+
+# plot robot path with respect to width of vacuum unit (180mm)
+data_linewidth_plot(points[:,0], points[:,1], ax=ax, linewidth=180, alpha=.75, color="steelblue")
 
 # plot path and position samples
 #plt.plot(points[:,0], points[:,1], 'ko-', markersize=2, linewidth=1.0, alpha=.5)
 
 """ plot arrows colored by time """
 plt.set_cmap("gist_rainbow")
-plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], range(len(points)), scale_units='xy', angles='xy', scale=1, zorder=99)
+plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], range(len(points)), scale_units='xy', angles='xy', width=0.002, scale=1, zorder=99)
 
 """ plot arrows colored by heading """
 #plt.set_cmap("hsv")
 #plt.quiver(points[:,0][:-1], points[:,1][:-1], points[:,0][1:]-points[:,0][:-1], points[:,1][1:]-points[:,1][:-1], values, scale_units='xy', angles='xy', scale=1, zorder=99)
 
 start_pos = plt.Circle((points[0,0], points[0,1]), 50, color='red', alpha=.5, zorder=100)
-ax1.add_artist(start_pos)
+ax.add_artist(start_pos)
 
 final_pos = plt.Circle((points[-1,0], points[-1,1]), 50, color='magenta', alpha=.5, zorder=101)
-ax1.add_artist(final_pos)
+ax.add_artist(final_pos)
 
-ax1.grid(which="both", zorder=5)
-ax1.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
-ax1.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
+ax.grid(which="both", zorder=5)
+ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
+ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(500))
 
 plt.show()                        
 #plt.savefig("out.png", dpi=150)     # save as file (800x600)
