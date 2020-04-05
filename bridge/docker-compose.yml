@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:    
+  roomba-bridge:
+    image: "192.168.178.27:5000/roomba-python"
+    container_name: roomba-bridge
+    restart: always
+    command: python3 bridge.py
+    volumes:
+      - ./bridge.py:/bridge.py:ro
+      - ./settings.py:/settings.py:ro
+      - /etc/ssl/certs:/etc/ssl/certs:ro
+
