@@ -1,7 +1,7 @@
 settings = {
         "debug": 2, # 0=None, 1=Error, 2=Info, 3=Trace
         "broker": {
-            "host": "osmc",
+            "host": "omv4.fritz.box",
             "port": 1883,
         },
         "topics": {

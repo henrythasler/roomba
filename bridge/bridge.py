@@ -28,12 +28,10 @@ class RoombaBridge(object):
             )
         self.roomba.on_connect = self.on_connect
         self.roomba.on_message = self.on_message
-        
-        self.roomba.tls_set(
-                ca_certs=self.settings["roomba"]["ca"], 
-                cert_reqs=ssl.CERT_NONE,
-                tls_version=ssl.PROTOCOL_TLSv1_2
-            )
+
+        context = ssl.SSLContext()
+        context.set_ciphers('DEFAULT@SECLEVEL=1')
+        self.roomba.tls_set_context(context)
         
         self.roomba.tls_insecure_set(True)
         self.roomba.username_pw_set(self.settings["roomba"]["user"], self.settings["roomba"]["pass"])    

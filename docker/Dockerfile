@@ -1,36 +1,28 @@
-#from python:3.6.6-alpine3.8
-FROM alpine:3.8
+FROM python:3.10.5-alpine3.16
+
+# docker build -t python3-imaging .
 
 # make sure we use the latest versions
-RUN apk --update upgrade
-
-# helper packages (you never know)
-RUN apk add --no-cache --virtual .helper \
-        bash \
-        wget \
-        curl \
-        tar \
-        nano
-
+RUN apk upgrade --update \
+#
+### tools
+    && apk add \
+            bash \
+            wget \
+            curl \
+            tar \
+            nano \
+            freetype \
+            openblas \
+            libstdc++ \
+#
 # build dependencies
-RUN apk add --no-cache --virtual .build-deps \
-        libpng-dev \
-        freetype-dev \
-        py-numpy-dev \
-        build-base
-
-# actual packages we require for the visuals
-RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
-        py3-paho-mqtt \
-        py3-numpy \
-        py3-scipy
-
-# another package that is required for the visuals
-RUN python3 -mpip install -U matplotlib
-
-# remove clutter
-RUN apk del .build-deps
-
-# runtime-dependency
-RUN apk add --no-cache --virtual \
-        freetype
+    && apk add --no-cache --virtual .build-deps \
+        build-base \
+        gfortran \
+        openblas-dev \
+#
+### python libraries
+    && python3 -m pip install -U paho-mqtt numpy matplotlib scipy \
+# # remove clutter
+    && apk del .build-deps
